@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Space - 朋友圈相册集群</title>
+    <style>
+        :root {
+            --boy-color: #8bb8e8;
+            --girl-color: #f4aeb9;
+            --bg-color: #f7f5f2;
+            --card-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        }
+        body {
+            font-family: '-apple-system', BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0; padding: 0; color: #333;
+        }
+        
+        /* 全局顶部纪念日 */
+        .global-header {
+            text-align: center; padding: 30px 20px 10px; background: white;
+            border-bottom: 1px solid #eaeaea;
+        }
+        .global-header h1 { margin: 0; font-size: 1.8em; font-weight: 600; letter-spacing: 1px; }
+        .anniversary {
+            margin-top: 10px; display: inline-block; padding: 6px 18px; 
+            background: #fff0f2; border-radius: 20px; font-size: 0.95em; color: #555;
+        }
+        .anniversary .days { font-size: 1.2em; font-weight: bold; color: #e06c75; margin: 0 3px; }
+        @keyframes heartbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+        .heart { display: inline-block; color: #ff4d4f; animation: heartbeat 1.5s infinite; }
+
+        .container { max-width: 700px; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
+
+        /* ================= 视图1：相册大厅控制面板 ================= */
+        .controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .view-switch btn, .action-btn {
+            background: white; border: 1px solid #ddd; padding: 8px 14px; 
+            border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: 0.2s;
+        }
+        .action-btn { background: #333; color: white; border: none; }
+        .action-btn:hover { background: #555; }
+        
+        /* 创建相册小表单 */
+        .create-album-box {
+            background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;
+            box-shadow: var(--card-shadow); display: none; gap: 10px;
+        }
+        .create-album-box input { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 6px; }
+
+        /* 相册展示展现模式 */
+        /* 1. 网格模式 */
+        .album-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .album-card { 
+            background: white; border-radius: 12px; overflow: hidden; 
+            box-shadow: var(--card-shadow); cursor: pointer; transition: 0.3s;
+        }
+        .album-card:hover { transform: translateY(-3px); }
+        .album-cover { width: 100%; height: 140px; object-fit: cover; background: #e0e0e0; }
+        .album-info { padding: 12px; font-weight: bold; font-size: 0.95em; text-align: center; }
+
+        /* 2. 列表模式 */
+        .album-list { display: flex; flex-direction: column; gap: 10px; }
+        .album-list .album-card { display: flex; align-items: center; padding: 10px 15px; }
+        .album-list .album-cover { width: 50px; height: 50px; border-radius: 6px; }
+        .album-list .album-info { text-align: left; padding-left: 15px; }
+
+        /* ================= 视图2：朋友圈时光机内页 ================= */
+        .back-bar { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .album-title-view { font-size: 1.4em; font-weight: bold; }
+        
+        /* 朋友圈发布面板 */
+        .moments-publish {
+            background: white; padding: 20px; border-radius: 12px; 
+            box-shadow: var(--card-shadow); margin-bottom: 25px;
+        }
+        .moments-publish textarea {
+            width: 100%; height: 70px; border: 1px solid #eee; border-radius: 8px;
+            padding: 10px; box-sizing: border-box; resize: none; font-size: 0.95em; outline: none;
+        }
+        .publish-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+        .checkbox-label { font-size: 0.85em; color: #666; cursor: pointer; }
+
+        /* 朋友圈时间线流 */
+        .moments-stream { display: flex; flex-direction: column; gap: 20px; }
+        .moment-item { background: white; padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow); }
+        .moment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .moment-author { padding: 4px 12px; border-radius: 15px; color: white; font-size: 0.8em; font-weight: bold; }
+        .author-boy { background-color: var(--boy-color); }
+        .author-girl { background-color: var(--girl-color); }
+        .moment-time { color: #b0b0b0; font-size: 0.8em; }
+        .moment-text { font-size: 1em; line-height: 1.5; margin-bottom: 12px; color: #222; word-break: break-all; }
+        .moment-img { width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="global-header">
+        <h1>Our Space</h1>
+        <div class="anniversary">
+            相爱 <span class="heart">❤</span> 第 <span class="days" id="daysCounter">...</span> 天
+        </div>
+    </div>
+
+    <div class="container">
+        
+        <div id="albumHubView">
+            <div class="controls">
+                <div class="view-switch">
+                    <button onclick="changeDisplayMode('grid')">🖼️ 图标网格</button>
+                    <button onclick="changeDisplayMode('list')">📜 名字列表</button>
+                </div>
+                <button class="action-btn" onclick="toggleCreateAlbumForm()">📁 新建相册</button>
+            </div>
+
+            <div class="create-album-box" id="createAlbumForm">
+                <input type="text" id="newAlbumName" placeholder="给新相册起个浪漫的名字...">
+                <button class="action-btn" onclick="submitNewAlbum()">确定创建</button>
+            </div>
+
+            <div id="albumContainer" class="album-grid"></div>
+        </div>
+
+        <div id="albumDetailView" style="display: none;">
+            <div class="back-bar">
+                <button class="view-switch btn" onclick="goBackToHub()">⬅ 返回相册大厅</button>
+                <div class="album-title-view" id="currentAlbumTitle">相册名</div>
+            </div>
+
+            <div class="moments-publish">
+                <textarea id="diaryText" placeholder="写下此刻的心情日记..."></textarea>
+                <div class="publish-footer">
+                    <select id="authorSelect" style="padding:6px; border-radius:6px;">
+                        <option value="boy">👨 依洋发言</option>
+                        <option value="girl">👧 佳欣发言</option>
+                    </select>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="setCoverCheck"> 设为相册封面
+                    </label>
+                    <button class="action-btn" onclick="document.getElementById('fileInput').click()">📸 上传图文</button>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="submitPost()">
+                </div>
+            </div>
+
+            <div class="moments-stream" id="momentsStreamContainer"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:8000";
+        let currentAlbumId = ""; 
+        let displayMode = "grid"; // 'grid' 或 'list'
+
+        window.onload = function() {
+            calculateDays();
+            loadAlbums();
+        };
+
+        // 1. 计算纪念日
+        function calculateDays() {
+            const startDate = new Date("2025-11-19T00:00:00");
+            const diffDays = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
+            document.getElementById('daysCounter').innerText = diffDays;
+        }
+
+        // 2. 加载所有相册
+        async function loadAlbums() {
+            try {
+                const response = await fetch(`${API_BASE}/albums/`);
+                const albums = await response.json();
+                const container = document.getElementById('albumContainer');
+                container.innerHTML = '';
+
+                // 根据当前模式切换样式类
+                container.className = displayMode === 'grid' ? 'album-grid' : 'album-list';
+
+                albums.forEach(album => {
+                    container.innerHTML += `
+                        <div class="album-card" onclick="openAlbum('${album.id}', '${album.name}')">
+                            <img class="album-cover" src="${album.cover_url}" alt="Cover">
+                            <div class="album-info">${album.name}</div>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                alert("后端未启动或连接失败！");
+            }
+        }
+
+        // 3. 切换网格/列表显示模式
+        function changeDisplayMode(mode) {
+            displayMode = mode;
+            loadAlbums();
+        }
+
+        // 4. 显示/隐藏新建相册表单
+        function toggleCreateAlbumForm() {
+            const form = document.getElementById('createAlbumForm');
+            form.style.display = form.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        // 5. 提交创建新相册
+        async function submitNewAlbum() {
+            const nameInput = document.getElementById('newAlbumName');
+            if(!nameInput.value.trim()) return alert("名字不能为空哦！");
+
+            const formData = new FormData();
+            formData.append('name', nameInput.value.trim());
+
+            const response = await fetch(`${API_BASE}/albums/`, { method: 'POST', body: formData });
+            const res = await response.json();
+            
+            if(res.status === 'success') {
+                nameInput.value = '';
+                toggleCreateAlbumForm();
+                loadAlbums(); // 刷新大厅
+            } else {
+                alert(res.message);
+            }
+        }
+
+        // 6. 点击进入具体相册页
+        function openAlbum(id, name) {
+            currentAlbumId = id;
+            document.getElementById('currentAlbumTitle').innerText = name;
+            document.getElementById('albumHubView').style.display = 'none';
+            document.getElementById('albumDetailView').style.display = 'block';
+            loadMoments();
+        }
+
+        // 7. 返回相册大厅
+        function goBackToHub() {
+            document.getElementById('albumHubView').style.display = 'block';
+            document.getElementById('albumDetailView').style.display = 'none';
+            loadAlbums(); // 返回时刷新大厅封面
+        }
+
+        // 8. 加载相册内部朋友圈动态
+        async function loadMoments() {
+            const stream = document.getElementById('momentsStreamContainer');
+            stream.innerHTML = '<p style="text-align:center;color:#999;">正在翻阅回忆篇章...</p>';
+
+            const response = await fetch(`${API_BASE}/albums/${currentAlbumId}/posts/`);
+            const posts = await response.json();
+            stream.innerHTML = '';
+
+            if(posts.length === 0) {
+                stream.innerHTML = '<p style="text-align:center;color:#999;padding:40px 0;">这个相册还是空的，快发第一条朋友圈吧！✨</p>';
+                return;
+            }
+
+            posts.forEach(post => {
+                const tagClass = post.author === 'boy' ? 'author-boy' : 'author-girl';
+                const authorName = post.author === 'boy' ? '依洋' : '佳欣';
+                
+                stream.innerHTML += `
+                    <div class="moment-item">
+                        <div class="moment-header">
+                            <span class="moment-author ${tagClass}">${authorName}</span>
+                            <span class="moment-time">${post.upload_time}</span>
+                        </div>
+                        ${post.diary_text ? `<div class="moment-text">${post.diary_text}</div>` : ''}
+                        <img class="moment-img" src="${post.photo_url}" alt="Moment Image" onclick="window.open(this.src)">
+                    </div>
+                `;
+            });
+        }
+
+        // 9. 发布图文动态到当前相册
+        async function submitPost() {
+            const fileInput = document.getElementById('fileInput');
+            const diaryInput = document.getElementById('diaryText');
+            const authorSelect = document.getElementById('authorSelect');
+            const setCoverCheck = document.getElementById('setCoverCheck');
+            
+            const file = fileInput.files[0];
+            if(!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('album_id', currentAlbumId);
+            formData.append('diary_text', diaryInput.value.trim());
+            formData.append('author', authorSelect.value);
+            formData.append('set_cover', setCoverCheck.checked);
+
+            try {
+                const response = await fetch(`${API_BASE}/upload/`, { method: 'POST', body: formData });
+                if(response.ok) {
+                    diaryInput.value = '';
+                    setCoverCheck.checked = false;
+                    loadMoments(); // 重新加载朋友圈流
+                } else {
+                    alert("发布失败，请核对云端凭证配置。");
+                }
+            } catch (e) {
+                alert("网络错误，后端服务器异常。");
+            } finally {
+                fileInput.value = ''; // 释放文件选择器
+            }
+        }
+    </script>
+</body>
+</html>

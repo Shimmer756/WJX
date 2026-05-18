@@ -1,0 +1,23 @@
+[
+    {
+        "id": "4a551467a2184dff836e33b524103c01",
+        "name": "洛阳",
+        "cover_url": "https://our-space-lyywjx.oss-cn-shanghai.aliyuncs.com/photos/87965879f1314cfab2e97d3a74df4d7c.png",
+        "create_time": "2026-05-18 18:19:37",
+        "posts": [
+            {
+                "photo_url": "https://our-space-lyywjx.oss-cn-shanghai.aliyuncs.com/photos/87965879f1314cfab2e97d3a74df4d7c.png",
+                "diary_text": "1111111",
+                "author": "boy",
+                "upload_time": "2026-05-18 18:22:34"
+            }
+        ]
+    },
+    {
+        "id": "default-album",
+        "name": "✨ 我们的初见时刻",
+        "cover_url": "",
+        "create_time": "2026-05-18 18:14:01",
+        "posts": []
+    }
+]
